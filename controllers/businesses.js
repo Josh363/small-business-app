@@ -1,4 +1,5 @@
 const Business = require('../models/Business')
+const ErrorResponse = require('../utils/errorResponse')
 
 //@desc Get all businesses
 //@route GET /api/v1/businesses
@@ -11,7 +12,7 @@ exports.getBusinesses = async (req, res, next) => {
       .status(200)
       .json({ success: true, count: businesses.length, data: businesses })
   } catch (err) {
-    res.status(400).json({ success: false })
+    next(err)
   }
 }
 
@@ -23,12 +24,11 @@ exports.getBusiness = async (req, res, next) => {
     const business = await Business.findById(req.params.id)
 
     if (!business) {
-      return res.status(400).json({ success: false })
+      return next(err)
     }
 
     res.status(200).json({ success: true, data: business })
   } catch (err) {
-    //res.status(400).json({ success: false })
     next(err)
   }
 }
@@ -45,7 +45,7 @@ exports.createBusiness = async (req, res, next) => {
       data: business,
     })
   } catch (err) {
-    res.status(400).json({ success: false })
+    next(err)
   }
 }
 
@@ -60,12 +60,12 @@ exports.updateBusiness = async (req, res, next) => {
     })
     //make sure business exists
     if (!business) {
-      return res.status(400).json({ success: false })
+      next(err)
     }
 
     res.status(200).json({ success: true, data: business })
   } catch (err) {
-    res.status(400).json({ success: false })
+    next(err)
   }
 }
 
@@ -77,11 +77,11 @@ exports.deleteBusiness = async (req, res, next) => {
     const business = await Business.findByIdAndDelete(req.params.id)
     //make sure business exists
     if (!business) {
-      return res.status(400).json({ success: false })
+      next(err)
     }
 
     res.status(200).json({ success: true, data: 'business deleted' })
   } catch (err) {
-    res.status(400).json({ success: false })
+    next(err)
   }
 }
