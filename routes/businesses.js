@@ -9,8 +9,8 @@ const {
 
 const router = express.Router()
 
-router.route('/').get(getBusinesses)
+router.route('/').get(getBusinesses).post(createBusiness)
 
-router.route('/:id').get(getBusiness)
+router.route('/:id').get(getBusiness).put(updateBusiness).delete(deleteBusiness)
 
 module.exports = router
