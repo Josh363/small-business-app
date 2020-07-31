@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const slugify = require('slugify')
 
 const BusinessSchema = new mongoose.Schema({
   name: {
@@ -84,6 +85,12 @@ const BusinessSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+})
+
+//middleware...create business slug from the name
+BusinessSchema.pre('save', function () {
+  this.slug = slugify(this.name, { lower: true })
+  next()
 })
 
 module.exports = mongoose.model('Business', BusinessSchema)
