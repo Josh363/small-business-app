@@ -10,12 +10,30 @@ exports.getBusinesses = asyncHandler(async (req, res, next) => {
   let query
   //make a copy of query
   const reqQuery = { ...req.query }
+  //fields to remove from query
+  const removeFields = ['select', 'sort']
+  //loop over removed fields
+  removeFields.forEach((param) => delete reqQuery[param])
   //turn query into string to manipulate
-  let queryStr = JSON.stringify(req.query)
+  let queryStr = JSON.stringify(reqQuery)
   //regex for adding $
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`)
-  //turn query string back into json
-  const businesses = await Business.find(JSON.parse(queryStr))
+  //turn query string back into json and find resource
+  query = Business.find(JSON.parse(queryStr))
+  //Select
+  if (req.query.select) {
+    const fields = req.query.select.split(',').join(' ')
+    query = query.select(fields)
+  }
+  //sort
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ')
+    query = query.sort(sortBy)
+  } else {
+    query = query.sort('-createdAt')
+  }
+
+  const businesses = await query
 
   res
     .status(200)
