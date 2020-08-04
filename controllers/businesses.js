@@ -9,9 +9,11 @@ const asyncHandler = require('../middleware/async')
 exports.getBusinesses = asyncHandler(async (req, res, next) => {
   let query
   //make a copy of query
-  const reqQuery = { ...req.query }
+  const reqQuery = {
+    ...req.query,
+  }
   //fields to remove from query
-  const removeFields = ['select', 'sort']
+  const removeFields = ['select', 'sort', 'page', 'limit']
   //loop over removed fields
   removeFields.forEach((param) => delete reqQuery[param])
   //turn query into string to manipulate
@@ -20,11 +22,13 @@ exports.getBusinesses = asyncHandler(async (req, res, next) => {
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`)
   //turn query string back into json and find resource
   query = Business.find(JSON.parse(queryStr))
+
   //Select
   if (req.query.select) {
     const fields = req.query.select.split(',').join(' ')
     query = query.select(fields)
   }
+
   //sort
   if (req.query.sort) {
     const sortBy = req.query.sort.split(',').join(' ')
@@ -33,11 +37,41 @@ exports.getBusinesses = asyncHandler(async (req, res, next) => {
     query = query.sort('-createdAt')
   }
 
+  //Pagination
+  const page = Number(req.query.page) || 1
+  const limit = parseInt(req.query.limit, 10) || 20
+  const startIndex = (page - 1) * limit
+  const endIndex = page * limit
+  const total = await Business.countDocuments()
+
+  query = query.skip(startIndex).limit(limit)
+
+  //finish query
   const businesses = await query
 
-  res
-    .status(200)
-    .json({ success: true, count: businesses.length, data: businesses })
+  //pagination result
+  const pagination = {}
+
+  if (endIndex < total) {
+    pagination.next = {
+      page: page + 1,
+      limit,
+    }
+  }
+
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit,
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    count: businesses.length,
+    pagination,
+    data: businesses,
+  })
 })
 
 //@desc Get a single businesss
