@@ -1,12 +1,21 @@
 const Business = require('../models/Business')
 const ErrorResponse = require('../utils/errorResponse')
+const geocoder = require('../utils/geocoder')
 const asyncHandler = require('../middleware/async')
 
 //@desc Get all businesses
 //@route GET /api/v1/businesses
 //@access Public
 exports.getBusinesses = asyncHandler(async (req, res, next) => {
-  const businesses = await Business.find()
+  let query
+  //make a copy of query
+  const reqQuery = { ...req.query }
+  //turn query into string to manipulate
+  let queryStr = JSON.stringify(req.query)
+  //regex for adding $
+  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`)
+  //turn query string back into json
+  const businesses = await Business.find(JSON.parse(queryStr))
 
   res
     .status(200)
@@ -65,4 +74,31 @@ exports.deleteBusiness = asyncHandler(async (req, res, next) => {
   }
 
   res.status(200).json({ success: true, data: 'business deleted' })
+})
+
+//@desc Get a business within a certain radius
+//@route GET /api/v1/businesses/radius/:zipcode/:distance
+//@access Private
+exports.getBusinessesInRadius = asyncHandler(async (req, res, next) => {
+  const { zipcode, distance } = req.params
+
+  // Get lat/lng from geocoder
+  const loc = await geocoder.geocode(zipcode)
+  const lat = loc[0].latitude
+  const lng = loc[0].longitude
+
+  // Calc radius using radians
+  // Divide dist by radius of Earth
+  // Earth Radius = 3,963 mi / 6,378 km
+  const radius = distance / 3963
+
+  const businesses = await Business.find({
+    location: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+  })
+
+  res.status(200).json({
+    success: true,
+    count: businesses.length,
+    data: businesses,
+  })
 })

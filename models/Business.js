@@ -49,7 +49,10 @@ const BusinessSchema = new mongoose.Schema({
       index: '2dsphere',
     },
     formattedAddress: String,
-    street: String,
+    street: {
+      type: String,
+      unique: true,
+    },
     city: String,
     state: String,
     zipcode: String,

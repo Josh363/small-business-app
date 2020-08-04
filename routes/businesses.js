@@ -5,9 +5,12 @@ const {
   createBusiness,
   updateBusiness,
   deleteBusiness,
+  getBusinessesInRadius,
 } = require('../controllers/businesses')
 
 const router = express.Router()
+
+router.route('/radius/:zipcode/:distance').get(getBusinessesInRadius)
 
 router.route('/').get(getBusinesses).post(createBusiness)
 
