@@ -21,7 +21,7 @@ exports.getBusinesses = asyncHandler(async (req, res, next) => {
   //regex for adding $
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`)
   //turn query string back into json and find resource
-  query = Business.find(JSON.parse(queryStr))
+  query = Business.find(JSON.parse(queryStr)).populate('services')
 
   //Select
   if (req.query.select) {
@@ -119,11 +119,19 @@ exports.updateBusiness = asyncHandler(async (req, res, next) => {
 //@route PUT /api/v1/businesses/:id
 //@access Private
 exports.deleteBusiness = asyncHandler(async (req, res, next) => {
-  const business = await Business.findByIdAndDelete(req.params.id)
+  const business = await Business.findById(req.params.id)
   //make sure business exists
   if (!business) {
-    next(err)
+    return next(
+      new ErrorResponse(
+        `Business not found with an id of ${req.params.id}`,
+        404
+      )
+    )
   }
+
+  //must use .remove to trigger remove middleware on business model
+  bootcamp.remove()
 
   res.status(200).json({ success: true, data: 'business deleted' })
 })

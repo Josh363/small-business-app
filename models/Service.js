@@ -14,4 +14,23 @@ const ServiceSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a service price'],
   },
+  serviceType: {
+    type: String,
+    required: [true, 'Please add a type for this service'],
+  },
+  creditAvailable: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  business: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Business',
+    required: true,
+  },
 })
+
+module.exports = mongoose.model('Service', ServiceSchema)
