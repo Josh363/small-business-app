@@ -60,7 +60,7 @@ exports.getService = asyncHandler(async (req, res, next) => {
   })
 })
 
-//@desc Add a course
+//@desc Add a service
 //@route  POST /api/v1/businesses/:businessId/services
 //@access Private
 exports.addService = asyncHandler(async (req, res, next) => {
@@ -82,5 +82,50 @@ exports.addService = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: service,
+  })
+})
+
+//@desc Update a service
+//@route  PUT /api/v1/service/:id
+//@access Private
+exports.updateService = asyncHandler(async (req, res, next) => {
+  let service = await Service.findById(req.params.id)
+
+  if (!service) {
+    return next(
+      new ErrorResponse(`No service with the id of ${req.params.id}`),
+      404
+    )
+  }
+
+  service = await Service.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  })
+
+  res.status(200).json({
+    success: true,
+    data: service,
+  })
+})
+
+//@desc Delete a service
+//@route  DELETE /api/v1/service/:id
+//@access Private
+exports.deleteService = asyncHandler(async (req, res, next) => {
+  const service = await Service.findById(req.params.id)
+
+  if (!service) {
+    return next(
+      new ErrorResponse(`No service with the id of ${req.params.id}`),
+      404
+    )
+  }
+
+  await service.remove()
+
+  res.status(200).json({
+    success: true,
+    data: `Service with ID of ${req.params.id} removed`,
   })
 })
