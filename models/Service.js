@@ -33,4 +33,43 @@ const ServiceSchema = new mongoose.Schema({
   },
 })
 
+//Static method to get average service cost
+ServiceSchema.statics.getAverageCost = async function (businessId) {
+  const obj = await this.aggregate([
+    {
+      $match: { business: businessId },
+    },
+    {
+      $group: {
+        _id: '$business',
+        averageCost: { $avg: '$price' },
+      },
+    },
+  ])
+  //add averageServiceCost to Business Model
+  try {
+    if (obj[0]) {
+      await this.model('Business').findByIdAndUpdate(businessId, {
+        averageCost: obj[0].averageCost.toFixed(2),
+      })
+    } else {
+      await this.model('Business').findByIdAndUpdate(businessId, {
+        averageCost: undefined,
+      })
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+//Call getAverageCost after save
+ServiceSchema.post('save', function () {
+  this.constructor.getAverageCost(this.business)
+})
+
+//Call getAverageCost before remove
+ServiceSchema.pre('remove', function () {
+  this.constructor.getAverageCost(this.business)
+})
+
 module.exports = mongoose.model('Service', ServiceSchema)
