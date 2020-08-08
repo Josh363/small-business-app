@@ -8,44 +8,37 @@ const asyncHandler = require('../middleware/async')
 //@route GET /api/v1/businesses/:businessId/services
 //@access Public
 exports.getServices = asyncHandler(async (req, res, next) => {
-  let query
-
   if (req.params.businessId) {
-    query = await Service.find({ business: req.params.businessId })
+    const services = await Service.find({ business: req.params.businessId })
     //check if any services for the business exist
-    if (query.length === 0) {
-      return res.status(404).json({
-        msg: `There are no services for business ${req.params.businessId}`,
-      })
+    if (services.length === 0) {
+      return next(
+        new ErrorResponse(
+          `There are no services for business ${req.params.businessId}`,
+          404
+        )
+      )
     }
-  } else {
-    //populate with business name/description associated with service
-    query = await Service.find().populate({
-      path: 'business',
-      select: 'name description',
+    //if they exist
+    return res.status(200).json({
+      success: true,
+      count: services.length,
+      data: services,
     })
-    if (query.length === 0) {
-      return res.status(404).json({
-        msg: `There are no services for this particular query`,
-      })
-    }
+  } else {
+    //all services
+    res.status(200).json(res.advancedResults)
   }
-
-  res.status(200).json({
-    success: true,
-    count: query.length,
-    data: query,
-  })
 })
 
 //@desc Get a single Service
 //@route GET /api/v1/services/:id
 //@access Public
 exports.getService = asyncHandler(async (req, res, next) => {
-  const service = await Service.findById(req.params.id).populate({
-    path: 'business',
-    select: 'name description',
-  })
+  const service = await Service.findById(req.params.id).populate(
+    'business',
+    'name description'
+  )
 
   if (!service) {
     return next(
