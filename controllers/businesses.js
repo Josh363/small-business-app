@@ -2,76 +2,13 @@ const Business = require('../models/Business')
 const ErrorResponse = require('../utils/errorResponse')
 const geocoder = require('../utils/geocoder')
 const asyncHandler = require('../middleware/async')
+const path = require('path')
 
 //@desc Get all businesses
 //@route GET /api/v1/businesses
 //@access Public
 exports.getBusinesses = asyncHandler(async (req, res, next) => {
-  let query
-  //make a copy of query
-  const reqQuery = {
-    ...req.query,
-  }
-  //fields to remove from query
-  const removeFields = ['select', 'sort', 'page', 'limit']
-  //loop over removed fields
-  removeFields.forEach((param) => delete reqQuery[param])
-  //turn query into string to manipulate
-  let queryStr = JSON.stringify(reqQuery)
-  //regex for adding $
-  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`)
-  //turn query string back into json and find resource
-  query = Business.find(JSON.parse(queryStr)).populate('services')
-
-  //Select
-  if (req.query.select) {
-    const fields = req.query.select.split(',').join(' ')
-    query = query.select(fields)
-  }
-
-  //sort
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ')
-    query = query.sort(sortBy)
-  } else {
-    query = query.sort('-createdAt')
-  }
-
-  //Pagination
-  const page = Number(req.query.page) || 1
-  const limit = parseInt(req.query.limit, 10) || 20
-  const startIndex = (page - 1) * limit
-  const endIndex = page * limit
-  const total = await Business.countDocuments()
-
-  query = query.skip(startIndex).limit(limit)
-
-  //finish query
-  const businesses = await query
-
-  //pagination result
-  const pagination = {}
-
-  if (endIndex < total) {
-    pagination.next = {
-      page: page + 1,
-      limit,
-    }
-  }
-
-  if (startIndex > 0) {
-    pagination.prev = {
-      page: page - 1,
-      limit,
-    }
-  }
-
-  res.status(200).json({
-    success: true,
-    count: businesses.length,
-    pagination,
-    data: businesses,
-  })
+  res.status(200).json(res.advancedResults)
 })
 
 //@desc Get a single businesss
@@ -160,5 +97,55 @@ exports.getBusinessesInRadius = asyncHandler(async (req, res, next) => {
     success: true,
     count: businesses.length,
     data: businesses,
+  })
+})
+
+//@desc Upload photo for business
+//@route PUT /api/v1/businesses/:id/photo
+//@access Private
+exports.businessPhotoUpload = asyncHandler(async (req, res, next) => {
+  const business = await Business.findById(req.params.id)
+  //make sure business exists
+  if (!business) {
+    return next(
+      new ErrorResponse(
+        `Business not found with an id of ${req.params.id}`,
+        404
+      )
+    )
+  }
+  //check if a file upload
+  if (!req.files) {
+    return next(new ErrorResponse(`Please upload a file`, 400))
+  }
+  //console.log(req.files) to check attributes
+  const file = req.files.file
+  //Make sure img is a photo
+  if (!file.mimetype.startsWith('image')) {
+    return next(new ErrorResponse(`Please upload an image file`), 404)
+  }
+  //Check filesize
+  if (file.size > process.env.MAX_FILE_UPLOAD) {
+    return next(
+      new ErrorResponse(
+        `Please upload an image less than ${process.env.MAX_FILE_UPLOAD}`,
+        400
+      )
+    )
+  }
+  //Create custom filename
+  file.name = `photo_${business._id}${path.parse(file.name).ext}`
+  //upload the file to public/uploads file path
+  file.mv(`${process.env.FILE_UPLOAD_PATH}/${file.name}`, async (err) => {
+    if (err) {
+      console.error(err)
+      return next(new ErrorResponse(`Problem with file upload`, 500))
+    }
+    await Business.findByIdAndUpdate(req.params.id, { photo: file.name })
+
+    res.status(200).json({
+      success: true,
+      data: file.name,
+    })
   })
 })
