@@ -13,7 +13,7 @@ const advancedResults = require('../middleware/advancedResults')
 const router = express.Router({ mergeParams: true })
 
 //protect middleware
-const { protect } = require('../middleware/auth')
+const { protect, authorize } = require('../middleware/auth')
 
 router
   .route('/')
@@ -21,12 +21,12 @@ router
     advancedResults(Service, { path: 'business', select: 'name description' }),
     getServices
   )
-  .post(protect, addService)
+  .post(protect, authorize('publisher', 'admin'), addService)
 
 router
   .route('/:id')
   .get(getService)
-  .put(protect, updateService)
-  .delete(protect, deleteService)
+  .put(protect, authorize('publisher', 'admin'), updateService)
+  .delete(protect, authorize('publisher', 'admin'), deleteService)
 
 module.exports = router
