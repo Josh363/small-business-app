@@ -57,8 +57,9 @@ exports.getService = asyncHandler(async (req, res, next) => {
 //@route  POST /api/v1/businesses/:businessId/services
 //@access Private
 exports.addService = asyncHandler(async (req, res, next) => {
-  //set url id to req.body
+  //set url id to req.body and user
   req.body.business = req.params.businessId
+  req.body.user = req.user.id
 
   const business = await Business.findById(req.params.businessId)
 
@@ -66,6 +67,16 @@ exports.addService = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(`No business with the id of ${req.params.businessId}`),
       404
+    )
+  }
+
+  //make sure user is the owner of business
+  if (business.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is unauthorized to add a service to business ${business._id}`,
+        401
+      )
     )
   }
 
@@ -91,6 +102,16 @@ exports.updateService = asyncHandler(async (req, res, next) => {
     )
   }
 
+  //make sure user is the owner of the service
+  if (service.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is unauthorized to update service ${service._id}`,
+        401
+      )
+    )
+  }
+
   service = await Service.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -112,6 +133,16 @@ exports.deleteService = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(`No service with the id of ${req.params.id}`),
       404
+    )
+  }
+
+  //make sure user is the owner of the service
+  if (service.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is unauthorized to delete service ${service._id}`,
+        401
+      )
     )
   }
 
