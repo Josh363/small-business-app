@@ -28,6 +28,21 @@ exports.getBusiness = asyncHandler(async (req, res, next) => {
 //@route GET /api/v1/businesses
 //@access Private
 exports.createBusiness = asyncHandler(async (req, res, next) => {
+  //add user to req.body
+  req.body.user = req.user.id
+  //limit publisher to one business posting
+  const publishedBusiness = await Business.findOne({ user: req.user.id })
+
+  //if user !== admin, they can only post one business
+  if (publishedBusiness && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `The user with ID ${req.user.id} has already published a business`,
+        400
+      )
+    )
+  }
+
   const business = await Business.create(req.body)
 
   res.status(201).json({
