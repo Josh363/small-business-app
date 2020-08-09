@@ -55,14 +55,25 @@ exports.createBusiness = asyncHandler(async (req, res, next) => {
 //@route PUT /api/v1/businesses/:id
 //@access Private
 exports.updateBusiness = asyncHandler(async (req, res, next) => {
-  const business = await Business.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  })
+  let business = await Business.findById(req.params.id)
   //make sure business exists
   if (!business) {
     next(err)
   }
+  //make sure user is the owner of business
+  if (business.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.params.id} is unauthorized to update this business`,
+        401
+      )
+    )
+  }
+  //update if user is owner
+  business = await Business.findOneAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  })
 
   res.status(200).json({ success: true, data: business })
 })
@@ -82,10 +93,23 @@ exports.deleteBusiness = asyncHandler(async (req, res, next) => {
     )
   }
 
-  //must use .remove to trigger remove middleware on business model
-  bootcamp.remove()
+  //make sure user is the owner of business
+  if (business.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.params.id} is unauthorized to delete this business`,
+        401
+      )
+    )
+  }
 
-  res.status(200).json({ success: true, data: 'business deleted' })
+  //must use .remove to trigger remove middleware on business model
+  business.remove()
+
+  res.status(200).json({
+    success: true,
+    data: 'business deleted',
+  })
 })
 
 //@desc Get a business within a certain radius
@@ -129,6 +153,15 @@ exports.businessPhotoUpload = asyncHandler(async (req, res, next) => {
       )
     )
   }
+  //make sure user is the owner of business
+  if (business.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.params.id} is unauthorized to update this business`,
+        401
+      )
+    )
+  }
   //check if a file upload
   if (!req.files) {
     return next(new ErrorResponse(`Please upload a file`, 400))
@@ -156,7 +189,9 @@ exports.businessPhotoUpload = asyncHandler(async (req, res, next) => {
       console.error(err)
       return next(new ErrorResponse(`Problem with file upload`, 500))
     }
-    await Business.findByIdAndUpdate(req.params.id, { photo: file.name })
+    await Business.findByIdAndUpdate(req.params.id, {
+      photo: file.name,
+    })
 
     res.status(200).json({
       success: true,

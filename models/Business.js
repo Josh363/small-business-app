@@ -127,10 +127,10 @@ BusinessSchema.pre('save', async function (next) {
   next()
 })
 
-//delete courses when a business is deleted
+//delete services when a business is deleted
 BusinessSchema.pre('remove', async function (next) {
   console.log(`Services removed from business ${this._id}`)
-  await this.model('Course').deleteMany({ bootcamp: this._id })
+  await this.model('Service').deleteMany({ business: this._id })
   next()
 })
 
