@@ -17,6 +17,9 @@ const serviceRouter = require('./services')
 
 const router = express.Router()
 
+//protect middleware
+const { protect } = require('../middleware/auth')
+
 //re-route in other routers
 router.use('/:businessId/services', serviceRouter)
 
@@ -25,10 +28,14 @@ router.route('/radius/:zipcode/:distance').get(getBusinessesInRadius)
 router
   .route('/')
   .get(advancedResults(Business, 'services'), getBusinesses)
-  .post(createBusiness)
+  .post(protect, createBusiness)
 
-router.route('/:id').get(getBusiness).put(updateBusiness).delete(deleteBusiness)
+router
+  .route('/:id')
+  .get(getBusiness)
+  .put(protect, updateBusiness)
+  .delete(protect, deleteBusiness)
 
-router.route('/:id/photo').put(businessPhotoUpload)
+router.route('/:id/photo').put(protect, businessPhotoUpload)
 
 module.exports = router
