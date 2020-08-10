@@ -12,9 +12,8 @@ const User = require('../models/User')
 const router = express.Router({ mergeParams: true })
 
 //protect, advanced results middleware middleware
-const { protect, authorize } = require('../middleware/auth')
 const advancedResults = require('../middleware/advancedResults')
-const { route } = require('./services')
+const { protect, authorize } = require('../middleware/auth')
 
 //add middleware to all routes...easier way than individual
 router.use(protect)

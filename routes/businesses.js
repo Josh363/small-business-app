@@ -14,14 +14,16 @@ const advancedResults = require('../middleware/advancedResults')
 
 //include resource routers
 const serviceRouter = require('./services')
+const reviewRouter = require('./reviews')
 
 const router = express.Router()
 
 //protect middleware
 const { protect, authorize } = require('../middleware/auth')
 
-//re-route in other routers
+//re-route in other routers...forward to router if it matches url
 router.use('/:businessId/services', serviceRouter)
+router.use('/:businessId/reviews', reviewRouter)
 
 router.route('/radius/:zipcode/:distance').get(getBusinessesInRadius)
 
