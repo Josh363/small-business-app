@@ -145,7 +145,7 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
 
 //@desc Reset password
 //@route PUT /api/v1/auth/resetPassword/:resettoken
-//@access Public
+//@access Private
 exports.resetPassword = asyncHandler(async (req, res, next) => {
   //get hashed token
   const resetPasswordToken = crypto

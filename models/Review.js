@@ -34,4 +34,46 @@ const ReviewSchema = new mongoose.Schema({
   },
 })
 
+//Prevent user from submitting more than one review per business
+ReviewSchema.index({ business: 1, user: 1 }, { unique: true })
+
+//Static method to get average review rating
+ReviewSchema.statics.getAverageRating = async function (businessId) {
+  const obj = await this.aggregate([
+    {
+      $match: { business: businessId },
+    },
+    {
+      $group: {
+        _id: '$business',
+        averageRating: { $avg: '$rating' },
+      },
+    },
+  ])
+  //add averageRating to Business Model
+  try {
+    if (obj[0]) {
+      await this.model('Business').findByIdAndUpdate(businessId, {
+        averageRating: obj[0].averageRating.toFixed(2),
+      })
+    } else {
+      await this.model('Business').findByIdAndUpdate(businessId, {
+        averageRating: undefined,
+      })
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+//Call getAverageRating after save
+ReviewSchema.post('save', function () {
+  this.constructor.getAverageRating(this.business)
+})
+
+//Call getAverageRating before remove
+ReviewSchema.pre('remove', function () {
+  this.constructor.getAverageRating(this.business)
+})
+
 module.exports = mongoose.model('Review', ReviewSchema)
