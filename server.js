@@ -10,6 +10,7 @@ const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const hpp = require('hpp')
 const xss = require('xss-clean')
+const cors = require('cors')
 const errorHandler = require('./middleware/error')
 const connectDB = require('./config/db')
 
@@ -61,6 +62,9 @@ app.use(limiter)
 
 //Http param pollution
 app.use(hpp())
+
+//Enable CORS for public api use
+app.use(cors())
 
 //Set static folder
 app.use(express.static(path.join(__dirname, 'public')))
